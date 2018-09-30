@@ -5,6 +5,7 @@ exports.makeEnv = makeEnv
 exports._incorrectWorkingDirectory = _incorrectWorkingDirectory
 
 const spawn = require('./lib/spawn')
+const getChildrenByPid = require('./lib/get-children-by-pid')
 const path = require('path')
 const Stream = require('stream').Stream
 const fs = require('graceful-fs')
@@ -70,7 +71,7 @@ function lifecycle (pkg, stage, wd, opts) {
         if (er) return reject(er)
 
         if ((wd.indexOf(opts.dir) !== 0 || _incorrectWorkingDirectory(wd, pkg)) &&
-            !opts.unsafePerm && pkg.scripts[stage]) {
+          !opts.unsafePerm && pkg.scripts[stage]) {
           opts.log.warn('lifecycle', logid(pkg, stage), 'cannot run in wd', pkg._id, pkg.scripts[stage], `(wd=${wd})`)
           return resolve()
         }
@@ -167,10 +168,10 @@ function shouldPrependCurrentNodeDirToPATH (opts) {
   var isWindows = process.platform === 'win32'
   var foundExecPath
   try {
-    foundExecPath = which.sync(path.basename(process.execPath), {pathExt: isWindows ? ';' : ':'})
+    foundExecPath = which.sync(path.basename(process.execPath), { pathExt: isWindows ? ';' : ':' })
     // Apply `fs.realpath()` here to avoid false positives when `node` is a symlinked executable.
     isDifferentNodeInPath = fs.realpathSync(process.execPath).toUpperCase() !==
-        fs.realpathSync(foundExecPath).toUpperCase()
+      fs.realpathSync(foundExecPath).toUpperCase()
   } catch (e) {
     isDifferentNodeInPath = true
   }
@@ -209,7 +210,7 @@ function runPackageLifecycle (pkg, stage, env, wd, opts, cb) {
   var cmd = env.npm_lifecycle_script
 
   var note = '\n> ' + pkg._id + ' ' + stage + ' ' + wd +
-             '\n> ' + cmd + '\n'
+    '\n> ' + cmd + '\n'
   runCmd(note, cmd, pkg, env, stage, wd, opts, cb)
 }
 
@@ -265,7 +266,7 @@ function runCmd_ (cmd, pkg, env, wd, opts, stage, unsafe, uid, gid, cb_) {
   var conf = {
     cwd: wd,
     env: env,
-    stdio: opts.stdio || [ 0, 1, 2 ]
+    stdio: opts.stdio || [0, 1, 2]
   }
 
   if (!unsafe) {
@@ -316,7 +317,7 @@ function runCmd_ (cmd, pkg, env, wd, opts, stage, unsafe, uid, gid, cb_) {
     if (er) {
       opts.log.info('lifecycle', logid(pkg, stage), 'Failed to exec ' + stage + ' script')
       er.message = pkg._id + ' ' + stage + ': `' + cmd + '`\n' +
-                   er.message
+        er.message
       if (er.code !== 'EPERM') {
         er.code = 'ELIFECYCLE'
       }
@@ -336,6 +337,8 @@ function runCmd_ (cmd, pkg, env, wd, opts, stage, unsafe, uid, gid, cb_) {
     return cb(er)
   }
   function procKill () {
+    const childPids = getChildrenByPid(proc.pid)
+    childPids.map(pid => process.kill(pid, 'SIGTERM'))
     proc.kill()
   }
   function procInterupt () {
@@ -352,7 +355,7 @@ function runHookLifecycle (pkg, stage, env, wd, opts, cb) {
     if (er) return cb()
     var cmd = path.join(opts.dir, '.hooks', stage)
     var note = '\n> ' + pkg._id + ' ' + stage + ' ' + wd +
-               '\n> ' + cmd
+      '\n> ' + cmd
     runCmd(note, cmd, pkg, env, stage, wd, opts, cb)
   })
 }

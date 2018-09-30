@@ -50,6 +50,7 @@
   "files": [
     "index.js",
     "lib/spawn.js",
+    "lib/get-children-by-pid.js",
     "node-gyp-bin"
   ]
 }
