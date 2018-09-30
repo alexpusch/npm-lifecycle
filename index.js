@@ -338,6 +338,7 @@ function runCmd_ (cmd, pkg, env, wd, opts, stage, unsafe, uid, gid, cb_) {
   }
   function procKill () {
     const childPids = getChildrenByPid(proc.pid)
+    opts.log.verbose('lifecycle', logid(pkg, stage), 'received SIGTERM. Sending SIGTERM to pids:', childPids)
     childPids.map(pid => process.kill(pid, 'SIGTERM'))
     proc.kill()
   }
